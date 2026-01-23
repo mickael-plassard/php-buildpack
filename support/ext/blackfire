@@ -51,9 +51,10 @@ find ${PREFIX} -type f \( -executable -o -name '*.a' \) -exec sh -c "file -i '{}
 # gets sourced on container boot
 cat > "${PREFIX}/bin/profile.blackfire.sh" <<'EOF'
 if [[ -n "$BLACKFIRE_SERVER_TOKEN" && -n "$BLACKFIRE_SERVER_ID" ]]; then
-	if [[ -f "/app/vendor/php/bin/blackfire-agent" ]]; then
+	if [[ -f "/app/vendor/php/bin/blackfire" ]]; then
 		touch /app/vendor/php/var/blackfire/run/agent.sock
-		/app/vendor/php/bin/blackfire-agent -config=/app/vendor/php/etc/blackfire/agent.ini -socket="unix:///app/vendor/php/var/blackfire/run/agent.sock" &
+		export BLACKFIRE_SOCKET="unix:///app/vendor/php/var/blackfire/run/agent.sock"
+		/app/vendor/php/bin/blackfire agent:start &
 	else
 		echo >&2 "WARNING: Add-on 'blackfire' detected, but PHP extension not yet installed. Push an update to the application to finish installation of the add-on; an empty change ('git commit --allow-empty') is sufficient."
 	fi
@@ -68,3 +69,8 @@ blackfire.server_token = ${BLACKFIRE_SERVER_TOKEN}
 blackfire.server_id = ${BLACKFIRE_SERVER_ID}
 blackfire.agent_socket = "unix:///app/vendor/php/var/blackfire/run/agent.sock"
 EOF
+
+
+## Line 54: changing to /app/vendor/php/bin/blackfire as we use blackfire agent:start below to start it and not blackfire-agent anymore
+## Line 56: Export and set the env var to run outside of this shell (Not if it should not be run in the compile file)
+## Line 57: Change to blackfire command as mentioned here: https://docs.blackfire.io/up-and-running/agent-upgrade
